@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const ErrorResponse = require("../utils/errorResponse");
 
 exports.register = async (req, res, next) => {
   const { firstName, lastName, username, email, password } = req.body;
@@ -11,15 +12,10 @@ exports.register = async (req, res, next) => {
       email,
       password,
     });
-    res.status(201).json({
-      success: true,
-      user,
-    });
+
+    sendToken(user, 201, res);
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
+    next(error);
   }
 };
 
@@ -27,33 +23,25 @@ exports.login = async (req, res, next) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    res
-      .status(400)
-      .json({ success: false, error: "Please provide email/password" });
+    next(new ErrorResponse("Please provide email/password", 400));
   }
 
   try {
     const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
-      res.status(400).json({
-        success: false,
-        error: "Email not found!!",
-      });
+      next(new ErrorResponse("Email not found!!", 400));
     }
 
     const isMatch = await user.matchPassword(password);
 
     if (isMatch) {
-      res.status(200).json({ success: true, user });
+      sendToken(user, 200, res);
     } else {
-      res.status(404).json({ success: false, error: "Password is incorrect!" });
+      next(new ErrorResponse("Password is incorrect!", 400));
     }
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
+    next(error);
   }
 };
 
@@ -63,4 +51,9 @@ exports.forgotPassword = (req, res, next) => {
 
 exports.resetPassword = (req, res, next) => {
   res.send("Reset Password Route");
+};
+
+const sendToken = (user, statusCode, res) => {
+  const token = user.getSignedToken();
+  res.status(statusCode).json({ success: true, token });
 };
