@@ -77,7 +77,7 @@ exports.forgotPassword = async (req, res, next) => {
         text: message,
       });
 
-      res.status(200).json({ success: true, message: "Email Sent" });
+      res.status(200).json({ success: true, data: "Email Sent" });
     } catch (error) {
       user.resetPasswordToken = undefined;
       user.resetPasswordExpire = undefined;
